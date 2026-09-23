@@ -84,6 +84,7 @@ export default function App() {
             <span>F3</span><span>Debug</span>
           </div>
           <button className="primary big-btn">Click to start walking</button>
+          <p className="muted small">If the mouse isn't captured (e.g. inside an embedded page), drag with the mouse to look around.</p>
         </div>
       )}
     </>

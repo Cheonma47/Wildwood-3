@@ -77,8 +77,12 @@ export function FirstPersonController({ world }: { world: WorldModel }) {
 
   useEffect(() => {
     const el = gl.domElement;
+    // Fallback for embedded/sandboxed pages where pointer lock is unavailable: drag to look.
+    let dragging = false;
+    const onDown = (e: MouseEvent) => { if (e.target === el && document.pointerLockElement !== el) dragging = true; };
+    const onUp = () => { dragging = false; };
     const onMouse = (e: MouseEvent) => {
-      if (document.pointerLockElement !== el) return;
+      if (document.pointerLockElement !== el && !dragging) return;
       const s = useGame.getState().settings;
       const k = 0.0022 * s.mouseSensitivity;
       yaw.current -= e.movementX * k;
@@ -121,6 +125,11 @@ export function FirstPersonController({ world }: { world: WorldModel }) {
         st.set({ mapOpen: false });
         return;
       }
+      if (e.code === 'Escape' && document.pointerLockElement !== el) {
+        // no pointer lock (drag-to-look mode): Esc toggles the menu directly
+        st.set({ settingsOpen: !st.settingsOpen, phase: st.settingsOpen ? 'playing' : 'paused' });
+        return;
+      }
       if (e.code === 'KeyF') {
         const hit = findInteractable(world, player.x, player.z);
         st.set({ infoCard: hit ? { title: hit.title, lines: hit.lines } : null });
@@ -139,6 +148,8 @@ export function FirstPersonController({ world }: { world: WorldModel }) {
     const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
     const onBlur = () => keys.clear();
     document.addEventListener('mousemove', onMouse);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('mouseup', onUp);
     document.addEventListener('pointerlockchange', onLockChange);
     el.addEventListener('click', onClick);
     window.addEventListener('keydown', onKeyDown);
@@ -146,6 +157,8 @@ export function FirstPersonController({ world }: { world: WorldModel }) {
     window.addEventListener('blur', onBlur);
     return () => {
       document.removeEventListener('mousemove', onMouse);
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('mouseup', onUp);
       document.removeEventListener('pointerlockchange', onLockChange);
       el.removeEventListener('click', onClick);
       window.removeEventListener('keydown', onKeyDown);

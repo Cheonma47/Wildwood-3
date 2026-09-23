@@ -22,7 +22,7 @@ export function SettingsMenu() {
   if (!open) return null;
 
   const resume = () => {
-    set({ settingsOpen: false });
+    set({ settingsOpen: false, phase: 'playing' });
     requestLock();
   };
   const saveHousing = () => {
