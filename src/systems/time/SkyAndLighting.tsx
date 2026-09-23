@@ -8,7 +8,7 @@ import { setNightFactor } from '../../world/render/materials';
 import { oceanUniforms } from '../../world/ocean/Ocean';
 import { sunAt } from './sun';
 
-const DAY_FOG = new THREE.Color('#c9dcea');
+const DAY_FOG = new THREE.Color('#b9d3ea');
 const GOLD_FOG = new THREE.Color('#f0b98a');
 const NIGHT_FOG = new THREE.Color('#0b1220');
 const DAY_SKY = new THREE.Color('#9fc7ea');
@@ -37,6 +37,8 @@ export function SkyAndLighting() {
 
   useEffect(() => {
     gl.shadowMap.enabled = shadows;
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
     gl.shadowMap.type = THREE.PCFShadowMap;
   }, [gl, shadows]);
 
@@ -56,7 +58,7 @@ export function SkyAndLighting() {
       sun.current.color.copy(sunColor);
     }
     if (hemi.current) {
-      hemi.current.intensity = 1.1 * (1 - n) + 0.4 * n;
+      hemi.current.intensity = 1.35 * (1 - n) + 0.4 * n;
       hemi.current.color.copy(DAY_SKY).lerp(new THREE.Color('#5a6f99'), n);
       hemi.current.groundColor.set('#8a8068').lerp(new THREE.Color('#10131a'), n);
     }
@@ -70,6 +72,8 @@ export function SkyAndLighting() {
 
   // advance the clock (1 real minute = 1 game hour) and keep the shadow box around the player
   const acc = useRef(0);
+  const shadowTimer = useRef(0);
+  const shadowKey = useRef('');
   useFrame((_, dt) => {
     if (timeAuto) {
       acc.current += dt;
@@ -80,27 +84,38 @@ export function SkyAndLighting() {
       }
     }
     if (sun.current) {
+      // Performance: the shadow box snaps to a 25 m grid and the shadow map is only
+      // re-rendered when the box moves, the sun moves, or every 2 s (new chunks).
       const d = state.dir;
-      sun.current.position.set(telemetry.x + d[0] * 300, Math.max(20, d[1] * 300), telemetry.z + d[2] * 300);
-      target.position.set(telemetry.x, 0, telemetry.z);
-      sun.current.target = target;
+      const sx = Math.round(telemetry.x / 25) * 25, sz = Math.round(telemetry.z / 25) * 25;
+      shadowTimer.current += dt;
+      const key = `${sx},${sz},${d[0].toFixed(3)},${d[1].toFixed(3)}`;
+      if (key !== shadowKey.current || shadowTimer.current > 2) {
+        shadowKey.current = key;
+        shadowTimer.current = 0;
+        sun.current.position.set(sx + d[0] * 300, Math.max(20, d[1] * 300), sz + d[2] * 300);
+        target.position.set(sx, 0, sz);
+        target.updateMatrixWorld();
+        sun.current.target = target;
+        gl.shadowMap.needsUpdate = true;
+      }
     }
   });
 
   const sunPos = useMemo(() => new THREE.Vector3(...state.dir).multiplyScalar(1000), [state]);
   return (
     <>
-      <Sky sunPosition={sunPos} turbidity={6} rayleigh={state.golden > 0.3 ? 2.5 : 1.2} mieCoefficient={0.006} mieDirectionalG={0.85} distance={40000} />
+      <Sky sunPosition={sunPos} turbidity={state.golden > 0.3 ? 5 : 2.2} rayleigh={state.golden > 0.3 ? 2.2 : 0.9} mieCoefficient={0.004} mieDirectionalG={0.8} distance={40000} />
       {state.night > 0.4 && <Stars radius={3000} depth={200} count={3000} factor={60} fade saturation={0} />}
       <directionalLight
         ref={sun}
         castShadow={shadows}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-left={-90}
-        shadow-camera-right={90}
-        shadow-camera-top={90}
-        shadow-camera-bottom={-90}
+        shadow-camera-left={-110}
+        shadow-camera-right={110}
+        shadow-camera-top={110}
+        shadow-camera-bottom={-110}
         shadow-camera-near={10}
         shadow-camera-far={800}
         shadow-bias={-0.0005}

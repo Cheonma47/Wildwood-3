@@ -109,10 +109,10 @@ const defaultSettings: Settings = {
   invertY: false,
   headBob: true,
   fov: 70,
-  drawDistance: 1100,
+  drawDistance: 800,
   volume: 0.7,
   shadows: true,
-  bloom: true,
+  bloom: false,
   showHud: true,
 };
 
@@ -136,7 +136,7 @@ export const useGame = create<GameState>((set, get) => ({
   debugOpen: false,
   watMode: false,
   watCategories: WAT_CATEGORIES.map((c) => c.id),
-  settings: loadJSON('ww.settings', defaultSettings),
+  settings: loadJSON('ww.settings.v2', defaultSettings),
   timeOfDay: TIME_PRESETS.afternoon,
   timeAuto: false,
   destination: null,
@@ -151,7 +151,7 @@ export const useGame = create<GameState>((set, get) => ({
   set: (p) => set(p),
   setSettings: (p) => {
     const settings = { ...get().settings, ...p };
-    saveJSON('ww.settings', settings);
+    saveJSON('ww.settings.v2', settings);
     set({ settings });
   },
   toggleWatCategory: (c) => {

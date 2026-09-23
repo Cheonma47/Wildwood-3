@@ -47,8 +47,9 @@ export class ChunkManager {
   private signAtlas: ReturnType<typeof streetSignAtlas>;
   private signMaterial: THREE.MeshStandardMaterial;
   private propMaterials: Record<string, THREE.Material>;
-  drawDistance = 1100;
-  detailDistance = 380;
+  drawDistance = 800;
+  detailDistance = 300;
+  private lastScan = { x: 1e9, z: 1e9, t: 0 };
   stats: ChunkStats = { loaded: 0, detailed: 0, queued: 0, total: 0 };
   private indexMs = 0;
   private baseTime = { ms: 0, n: 0 };
@@ -108,6 +109,10 @@ export class ChunkManager {
   /** Called every frame with the camera position. budgetMs limits build work. */
   update(x: number, z: number, budgetMs = 6): void {
     const t0 = performance.now();
+    // Performance: rescan only when work is pending, the player moved ≥ 10 m, or every 0.5 s.
+    const ls = this.lastScan;
+    if (!this.stats.queued && Math.hypot(x - ls.x, z - ls.z) < 10 && t0 - ls.t < 500) return;
+    this.lastScan = { x, z, t: t0 };
     const want: { c: ChunkData; d: number }[] = [];
     for (const c of this.index.chunks.values()) {
       const d = this.chunkDistance(c, x, z);

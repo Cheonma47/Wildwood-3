@@ -46,7 +46,7 @@ export default function App() {
       {world && (
         <Canvas
           shadows={shadows}
-          dpr={[1, 1.75]}
+          dpr={[1, 1.25]}
           gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping }}
           camera={{ fov: 70, near: 0.25, far: 9000, position: [0, 2, 0] }}
           onCreated={({ scene, gl }) => Object.assign((window as unknown as { __wildwood: object }).__wildwood ?? {}, { scene, gl })}

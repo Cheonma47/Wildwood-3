@@ -59,7 +59,9 @@ export function getMaterials(): Materials {
         vec2 gx = dFdx(vFacadeUv * vec2(0.25, 1.0));
         vec2 gy = dFdy(vFacadeUv * vec2(0.25, 1.0));
         vec4 sampledDiffuseColor = textureGrad(map, fuv, gx, gy);
-        diffuseColor *= sampledDiffuseColor;`)
+        diffuseColor *= sampledDiffuseColor;
+        // cheap ambient occlusion: darker where the wall meets the ground
+        diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(-0.1, 0.9, vFacadeUv.y));`)
       .replace('#include <emissivemap_fragment>', `
         vec4 emissiveColor = textureGrad(emissiveMap, fuv, gx, gy);
         float wh = fract(sin(dot(fcell + vec2(vTile * 7.13, vTile * 3.1) + floor(vColor.rg * 37.0), vec2(12.9898, 78.233))) * 43758.5453);

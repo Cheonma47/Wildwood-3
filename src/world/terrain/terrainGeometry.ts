@@ -4,7 +4,7 @@ import { GeoBuilder } from '../render/geometry';
 import { TerrainClass, type Terrain } from './heightfield';
 
 const COLORS: Record<number, THREE.Color> = {
-  [TerrainClass.Land]: new THREE.Color('#9aa37a'),
+  [TerrainClass.Land]: new THREE.Color('#93a66b'),
   [TerrainClass.Water]: new THREE.Color('#b8a47a'),
   [TerrainClass.Beach]: new THREE.Color('#ead9ad'),
   [TerrainClass.Wetland]: new THREE.Color('#77875a'),

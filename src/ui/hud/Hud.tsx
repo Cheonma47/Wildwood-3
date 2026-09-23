@@ -27,7 +27,7 @@ export function Hud({ world }: { world: WorldModel }) {
   const hint = useGame((s) => s.interactHint);
   const infoCard = useGame((s) => s.infoCard);
   const mapOpen = useGame((s) => s.mapOpen);
-  const pose = usePoll(pollPose, 150);
+  const pose = usePoll(pollPose, 250);
   const street = useMemo(() => world.nearestStreet(pose.x, pose.z)?.name ?? '', [world, Math.round(pose.x / 3), Math.round(pose.z / 3)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -105,9 +105,15 @@ function Minimap({ world, x, z, heading }: { world: WorldModel; x: number; z: nu
   const route = useGame((s) => s.route);
   const destination = useGame((s) => s.destination);
   const housing = useGame((s) => s.housing);
+  const last = useRef({ x: 1e9, z: 1e9, h: 0, t: 0, route: null as unknown, dest: null as unknown });
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
+    const l = last.current;
+    const now = performance.now();
+    const same = Math.hypot(x - l.x, z - l.z) < 2 && Math.abs(heading - l.h) < 4 && l.route === route && l.dest === destination;
+    if (same || now - l.t < 250) return;
+    last.current = { x, z, h: heading, t: now, route, dest: destination };
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = c.clientWidth, h = c.clientHeight;
     if (c.width !== w * dpr) { c.width = w * dpr; c.height = h * dpr; }

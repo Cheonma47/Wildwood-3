@@ -119,14 +119,15 @@ export function facadeTextures(): { map: THREE.CanvasTexture; emissive: THREE.Ca
   const [e, ectx] = canvas(W * 4, H);
   ectx.fillStyle = '#000';
   ectx.fillRect(0, 0, W * 4, H);
-  const win = (x: number, y: number, w: number, h: number, frame = '#f4f1ea', glass = '#5d7890') => {
+  const win = (x: number, y: number, w: number, h: number, frame = '#f4f1ea', glass = '#7d9bb5') => {
     ctx.fillStyle = frame;
     ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
     ctx.fillStyle = glass;
     ctx.fillRect(x, y, w, h);
     const g = ctx.createLinearGradient(x, y, x + w, y + h);
-    g.addColorStop(0, 'rgba(255,255,255,0.25)');
-    g.addColorStop(1, 'rgba(255,255,255,0)');
+    g.addColorStop(0, 'rgba(255,255,255,0.45)');
+    g.addColorStop(0.5, 'rgba(255,255,255,0.08)');
+    g.addColorStop(1, 'rgba(20,30,40,0.25)');
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
   };
@@ -163,13 +164,13 @@ export function facadeTextures(): { map: THREE.CanvasTexture; emissive: THREE.Ca
   lit(X1 + 64, 40, 46, 40, '#ffcf8a');
   // 2: commercial / apartment – big window band
   const X2 = W * 2;
-  win(X2 + 10, 26, 108, 70, '#d9d9d9', '#4f6f86');
+  win(X2 + 10, 26, 108, 70, '#e2e2e2', '#6f90aa');
   ctx.fillStyle = '#d9d9d9';
   ctx.fillRect(X2 + 62, 26, 4, 70);
   lit(X2 + 10, 26, 50, 70, '#fff2c4');
   // 3: shopfront – full-height glass with awning band on top
   const X3 = W * 3;
-  win(X3 + 8, 30, 112, 90, '#333', '#3c5566');
+  win(X3 + 8, 30, 112, 90, '#3a3a3a', '#5b7a8e');
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(X3, 0, W, 22);
   lit(X3 + 8, 30, 112, 90, '#fff0d0');

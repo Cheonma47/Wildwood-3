@@ -97,13 +97,11 @@ a table of fixed landmark pairs.
   can also go in `src/data/wildwood/housing.ts`.
 - **Day/night:** morning, afternoon, sunset, evening and night presets, plus an optional running
   clock. The sun position is computed for Wildwood in July. At night windows, street and Boardwalk
-  lamps, ride lights, neon signs and the Ferris wheel light up, with nearby real point lights and bloom.
+  lamps, ride lights, neon signs and the Ferris wheel light up. Bloom (night glow) is optional in settings.
 - **Audio:** everything is synthesised in the browser, with no recordings or songs. Surf, wind,
   gulls, crowd murmur, arcade blips, birds and distant traffic cross-fade by zone.
-- **Ambient life:** low-density traffic on the real road graph (keeps right, respects one-ways,
-  waits at signals and stop signs, brakes for you), Boardwalk crowds, sidewalk walkers, beach
-  visitors, seagulls, parked bikes, and cyclists on the Boardwalk before 11 AM (Wildwood only
-  allows bikes on the Boardwalk in the morning).
+- **No moving cars or people** (removed for performance). Static parked cars, beach umbrellas
+  and street furniture remain near the player.
 - **Signage:** real OSM business names go on their buildings. Motels get Doo-Wop pole signs with
   neon at night. Boardwalk shops without OSM data get generic category signs (PIZZA, ARCADE, …)
   instead of invented names.

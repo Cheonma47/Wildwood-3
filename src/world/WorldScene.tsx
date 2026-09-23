@@ -3,18 +3,13 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import { ChunkManager } from '../systems/chunks/chunkManager';
 import { SkyAndLighting } from '../systems/time/SkyAndLighting';
-import { Traffic } from '../systems/traffic/Traffic';
-import { Pedestrians } from '../systems/pedestrians/Pedestrians';
-import { TramCar } from '../systems/traffic/TramCar';
 import { RouteLine } from '../systems/navigation/RouteLine';
 import { useGame, telemetry } from '../store/gameStore';
 import { FirstPersonController, playerRef } from '../player/FirstPersonController';
 import { Boardwalk } from './boardwalk/Boardwalk';
 import { Landmarks } from './landmarks/Landmarks';
 import { Ocean, OuterOcean } from './ocean/Ocean';
-import { LampLights } from './props/LampLights';
 import { NightGlow } from '../systems/time/NightGlow';
-import { Seagulls } from './props/Seagulls';
 import type { WorldModel } from './worldModel';
 
 export function WorldScene({ world, onChunkManager }: { world: WorldModel; onChunkManager?: (m: ChunkManager) => void }) {
@@ -57,12 +52,7 @@ export function WorldScene({ world, onChunkManager }: { world: WorldModel; onChu
       <OuterOcean />
       <NightGlow />
       <Landmarks world={world} />
-      <LampLights manager={manager} />
       <RouteLine world={world} />
-      <Traffic world={world} />
-      <Pedestrians world={world} />
-      <TramCar world={world} />
-      <Seagulls world={world} />
     </>
   );
 }
