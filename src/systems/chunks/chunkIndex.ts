@@ -24,7 +24,7 @@ export interface PropInstance {
 
 export type PropKind =
   | 'lamp' | 'bwLamp' | 'tree' | 'pole' | 'signal' | 'stop' | 'car' | 'bench' | 'trash'
-  | 'umbrella' | 'chair' | 'lifeguard' | 'signPost';
+  | 'umbrella' | 'chair' | 'lifeguard' | 'signPost' | 'bike';
 
 export interface StreetSign {
   x: number;
@@ -238,6 +238,7 @@ export class ChunkIndex {
       if ((p.kind === 'tree' || p.kind === 'pole') && onRoad(p.x, p.z, 0.3)) continue;
       if (p.kind === 'tree') addProp('tree', { x: p.x, y, z: p.z, rot: hash01(Math.floor(p.x * 13)) * 6.28, scale: 0.8 + hash01(Math.floor(p.z * 7)) * 0.5 });
       else if (p.kind === 'pole' && !inBuilding(p.x, p.z)) addProp('pole', { x: p.x, y, z: p.z, rot: 0 });
+      else if (p.kind === 'bike_parking') for (let k = 0; k < 4; k++) addProp('bike', { x: p.x + k * 0.7, y, z: p.z, rot: Math.PI / 2 });
       else if (p.kind === 'signal' || p.kind === 'stop' || p.kind === 'crossing') this.placeRoadside(world, p, (k, pr) => { if (!onRoad(pr.x, pr.z, 0.2)) addProp(k, pr); }, get);
     }
 
@@ -284,6 +285,14 @@ export class ChunkIndex {
       if (i % 3 === 1) {
         const d = s.width / 2 - 1.3;
         addProp('bench', { x: s.p[0] + onx * d, y: DECK_HEIGHT, z: s.p[1] + onz * d, rot: along + Math.PI });
+      }
+      if (i % 14 === 7) {
+        // bike rack on the inland edge of the deck: 3–5 parked bicycles
+        const d = -(s.width / 2 - 1.1);
+        const n = 3 + Math.floor(r() * 3);
+        for (let k = 0; k < n; k++) {
+          addProp('bike', { x: s.p[0] + onx * d + ux * (k * 0.7 - n * 0.35), y: DECK_HEIGHT, z: s.p[1] + onz * d + uz * (k * 0.7 - n * 0.35), rot: Math.atan2(onz, -onx) + Math.PI / 2, color: 0 });
+        }
       }
       if (i % 5 === 2) {
         const d = s.width / 2 - 1.0;

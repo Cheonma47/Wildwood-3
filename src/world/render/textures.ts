@@ -72,6 +72,20 @@ export function planksTexture(): THREE.CanvasTexture {
   return tex(c);
 }
 
+/** Neutral light-grey grain so terrain vertex colours (grass, sand, marsh) keep their hue. */
+export function groundGrainTexture(): THREE.CanvasTexture {
+  const [c, ctx] = canvas(256, 256);
+  ctx.fillStyle = '#f2f2f2';
+  ctx.fillRect(0, 0, 256, 256);
+  const r = rng(12);
+  for (let i = 0; i < 9000; i++) {
+    const v = 205 + Math.floor(r() * 50);
+    ctx.fillStyle = `rgba(${v},${v},${v},0.55)`;
+    ctx.fillRect(r() * 256, r() * 256, 1 + r() * 1.5, 1 + r() * 2.5);
+  }
+  return tex(c);
+}
+
 export function sandTexture(): THREE.CanvasTexture {
   const [c, ctx] = canvas(256, 256);
   ctx.fillStyle = '#e8d8ae';

@@ -36,6 +36,7 @@ export function DebugOverlay({ world }: { world: WorldModel }) {
       <Row k="Distance walked" v={`${telemetry.distanceWalked.toFixed(0)} m`} />
       <Row k="FPS" v={`${telemetry.fps.toFixed(0)} (${telemetry.frameMs.toFixed(1)} ms)`} />
       <Row k="Loaded chunks" v={`${c.loaded} / ${c.total} (detail ${c.detailed}${c.queued ? `, queued ${c.queued}` : ''})`} />
+      <Row k="Chunk build (avg)" v={`base ${(c.avgBaseMs ?? 0).toFixed(1)} ms · detail ${(c.avgDetailMs ?? 0).toFixed(1)} ms · index ${(c.indexMs ?? 0).toFixed(0)} ms`} />
       <Row k="Draw calls" v={String(telemetry.drawCalls)} />
       <Row k="Triangles" v={`${(telemetry.triangles / 1000).toFixed(0)} k`} />
       <Row k="Buildings" v={`${world.stats.osmBuildings} OSM + ${world.stats.proceduralBuildings} procedural`} />

@@ -5,7 +5,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { telemetry } from '../../store/gameStore';
+import { telemetry, useGame } from '../../store/gameStore';
 import { rng, type V2 } from '../../world/math/polygon';
 import { DECK_HEIGHT } from '../../world/physics/walkable';
 import { getPrototypes } from '../../world/props/prototypes';
@@ -23,6 +23,8 @@ interface Walker {
   color: THREE.Color;
   still: boolean;
   rot: number;
+  /** cyclist (Boardwalk bikes are allowed in the morning) */
+  bike?: boolean;
 }
 
 const SHIRTS = ['#e53935', '#1e88e5', '#fdd835', '#43a047', '#ffffff', '#8e24aa', '#fb8c00', '#00acc1', '#f06292', '#212121', '#90caf9', '#a5d6a7'];
@@ -61,6 +63,14 @@ export function Pedestrians({ world }: { world: WorldModel }) {
           color: new THREE.Color(SHIRTS[Math.floor(r() * SHIRTS.length)]), still: r() < 0.12, rot: 0,
         });
       }
+      // morning cyclists
+      for (let i = 0; i < 26; i++) {
+        out.push({
+          path: bw, cum, s: r() * L, dir: r() < 0.5 ? 1 : -1, speed: 3.5 + r() * 2,
+          lateral: (r() < 0.5 ? -1 : 1) * (2.5 + r() * 3), y: DECK_HEIGHT,
+          color: new THREE.Color(SHIRTS[Math.floor(r() * SHIRTS.length)]), still: false, rot: 0, bike: true,
+        });
+      }
       // beach visitors (standing/sitting still), seaward of the boardwalk
       for (let i = 0; i < 260; i++) {
         const k = Math.floor(r() * world.boardwalkLine.length);
@@ -95,6 +105,11 @@ export function Pedestrians({ world }: { world: WorldModel }) {
     m.castShadow = true;
     return m;
   }, [P, walkers]);
+  const bikes = useMemo(() => {
+    const m = new THREE.InstancedMesh(P.bicycle, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }), walkers.filter((w) => w.bike).length);
+    m.frustumCulled = false;
+    return m;
+  }, [P, walkers]);
   const tmp = useMemo(() => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), s: new THREE.Vector3(1, 1, 1), up: new THREE.Vector3(0, 1, 0) }), []);
   const clock = useRef(0);
   useFrame((_, dt) => {
@@ -102,6 +117,8 @@ export function Pedestrians({ world }: { world: WorldModel }) {
     clock.current += dt;
     const px = telemetry.x, pz = telemetry.z;
     let n = 0; // visible instances are packed at the front; mesh.count limits the draw
+    let nb = 0;
+    const bikeHours = useGame.getState().timeOfDay < 11 && useGame.getState().timeOfDay > 5;
     for (let i = 0; i < walkers.length; i++) {
       const w = walkers[i];
       if (!w.still) {
@@ -113,22 +130,37 @@ export function Pedestrians({ world }: { world: WorldModel }) {
       const [x0, z0, dx, dz] = at(w.path, w.cum, w.s);
       const x = x0 - dz * w.lateral, z = z0 + dx * w.lateral;
       if (Math.hypot(x - px, z - pz) > 450) continue;
+      if (w.bike && !bikeHours) continue;
       const y = w.y ?? world.groundAt(x, z);
       const bob = w.still ? 0 : Math.abs(Math.sin(clock.current * 6 * w.speed + i)) * 0.04;
       const rot = w.still ? w.rot : Math.atan2(-(dz * w.dir), dx * w.dir) - Math.PI / 2;
       tmp.q.setFromAxisAngle(tmp.up, rot);
-      tmp.p.set(x, y + bob, z);
+      tmp.p.set(x, y + (w.bike ? 0.55 : bob), z);
       const h = 0.92 + ((i * 7919) % 100) / 100 * 0.16;
       tmp.s.set(1, h, 1);
       tmp.m.compose(tmp.p, tmp.q, tmp.s);
       m.setMatrixAt(n, tmp.m);
       m.setColorAt(n, w.color);
       n++;
+      if (w.bike) {
+        tmp.q.setFromAxisAngle(tmp.up, rot + Math.PI / 2);
+        tmp.p.set(x, y, z);
+        tmp.s.set(1, 1, 1);
+        tmp.m.compose(tmp.p, tmp.q, tmp.s);
+        bikes.setMatrixAt(nb++, tmp.m);
+      }
     }
     m.count = n;
+    bikes.count = nb;
+    bikes.instanceMatrix.needsUpdate = true;
     m.instanceMatrix.needsUpdate = true;
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
   });
 
-  return <primitive object={mesh} />;
+  return (
+    <>
+      <primitive object={mesh} />
+      <primitive object={bikes} />
+    </>
+  );
 }

@@ -121,11 +121,34 @@ function make() {
     at(new THREE.SphereGeometry(0.13, 6, 4), 0, 1.62, 0),
   ]);
 
+  // Bicycle ~1.75 m long, local +x forward
+  const bicycle = merge([
+    colored(at(new THREE.TorusGeometry(0.33, 0.025, 4, 14), 0.55, 0.35, 0), '#1b1b1b'),
+    colored(at(new THREE.TorusGeometry(0.33, 0.025, 4, 14), -0.55, 0.35, 0), '#1b1b1b'),
+    colored(at(new THREE.BoxGeometry(1.0, 0.04, 0.04), 0.0, 0.62, 0, 0, 0, 0.1), '#1565c0'),
+    colored(at(new THREE.BoxGeometry(0.04, 0.5, 0.04), -0.2, 0.55, 0, 0, 0, 0.25), '#1565c0'),
+    colored(at(new THREE.BoxGeometry(0.04, 0.55, 0.04), 0.45, 0.62, 0, 0, 0, -0.35), '#1565c0'),
+    colored(at(new THREE.BoxGeometry(0.06, 0.04, 0.5), 0.5, 0.95, 0), '#333333'),
+    colored(at(new THREE.BoxGeometry(0.22, 0.05, 0.12), -0.25, 0.85, 0), '#222222'),
+  ]);
+  // Seagull: two wing triangles + body
+  const gull = (() => {
+    const g = new THREE.BufferGeometry();
+    const v = new Float32Array([
+      0, 0, 0, -0.1, 0, 0.45, 0.2, 0.06, 0.02, // left wing
+      0, 0, 0, 0.2, 0.06, -0.02, -0.1, 0, -0.45, // right wing
+      -0.25, -0.02, 0, 0.3, 0.02, 0.03, 0.3, 0.02, -0.03, // body
+    ]);
+    g.setAttribute('position', new THREE.BufferAttribute(v, 3));
+    g.computeVertexNormals();
+    return g;
+  })();
+
   const piling = merge([colored(at(new THREE.CylinderGeometry(0.15, 0.15, 3, 6), 0, -0.5, 0), '#5a4632')]);
 
   return {
     lampPole, lampHead, bwLampPole, bwLampGlobe, treeTrunk, treeCanopy, utilityPole, signalPole, signalLights,
-    stopSign, signPost, signPole, carBody, carGlass, bench, trashCan, umbrellaPole, umbrellaTop, beachChair, lifeguard, person, piling,
+    stopSign, signPost, signPole, carBody, carGlass, bench, trashCan, umbrellaPole, umbrellaTop, beachChair, lifeguard, person, piling, bicycle, gull,
   };
 }
 

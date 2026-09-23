@@ -356,6 +356,7 @@ for (const n of nodes.values()) {
   else if (t.power === 'pole' || t.power === 'tower') kind = 'pole';
   else if (t.highway === 'street_lamp') kind = 'lamp';
   else if (t.amenity === 'bench') kind = 'bench';
+  else if (t.amenity === 'bicycle_parking') kind = 'bike_parking';
   else if (t.attraction === 'big_wheel') kind = 'big_wheel';
   else if (t.attraction === 'roller_coaster') kind = 'roller_coaster';
   else if (t.attraction) kind = 'ride';

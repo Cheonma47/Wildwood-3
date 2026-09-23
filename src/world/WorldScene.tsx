@@ -14,6 +14,7 @@ import { Landmarks } from './landmarks/Landmarks';
 import { Ocean, OuterOcean } from './ocean/Ocean';
 import { LampLights } from './props/LampLights';
 import { NightGlow } from '../systems/time/NightGlow';
+import { Seagulls } from './props/Seagulls';
 import type { WorldModel } from './worldModel';
 
 export function WorldScene({ world, onChunkManager }: { world: WorldModel; onChunkManager?: (m: ChunkManager) => void }) {
@@ -61,6 +62,7 @@ export function WorldScene({ world, onChunkManager }: { world: WorldModel; onChu
       <Traffic world={world} />
       <Pedestrians world={world} />
       <TramCar world={world} />
+      <Seagulls world={world} />
     </>
   );
 }

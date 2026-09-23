@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import {
-  asphaltTexture, facadeTextures, grassTexture, planksTexture, sandTexture, sidewalkTexture,
+  asphaltTexture, facadeTextures, grassTexture, groundGrainTexture, planksTexture, sandTexture, sidewalkTexture,
 } from './textures';
 
 export interface Materials {
@@ -74,7 +74,7 @@ export function getMaterials(): Materials {
     parking: std({ map: asphaltMap, color: '#c9c9c9', roughness: 0.95 }),
     planks: std({ map: planksTexture(), roughness: 0.85 }),
     wood: std({ color: '#8b6a48', roughness: 0.9 }),
-    terrain: std({ vertexColors: true, roughness: 1, map: grassTexture() }),
+    terrain: std({ vertexColors: true, roughness: 1, map: groundGrainTexture() }),
     facade: facadeMat,
     roof: std({ vertexColors: true, roughness: 0.95 }),
     plainWall: std({ vertexColors: true, roughness: 0.9 }),

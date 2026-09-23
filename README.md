@@ -101,7 +101,12 @@ a table of fixed landmark pairs.
 - **Audio:** everything is synthesised in the browser, with no recordings or songs. Surf, wind,
   gulls, crowd murmur, arcade blips, birds and distant traffic cross-fade by zone.
 - **Ambient life:** low-density traffic on the real road graph (keeps right, respects one-ways,
-  waits at signals and stop signs, brakes for you), Boardwalk crowds, sidewalk walkers and beach visitors.
+  waits at signals and stop signs, brakes for you), Boardwalk crowds, sidewalk walkers, beach
+  visitors, seagulls, parked bikes, and cyclists on the Boardwalk before 11 AM (Wildwood only
+  allows bikes on the Boardwalk in the morning).
+- **Signage:** real OSM business names go on their buildings. Motels get Doo-Wop pole signs with
+  neon at night. Boardwalk shops without OSM data get generic category signs (PIZZA, ARCADE, …)
+  instead of invented names.
 - **Debug (F3):** latitude and longitude, world X and Z, speed, distance from Dogtooth, current
   street, surface, FPS, loaded chunks, draw calls, triangles and building counts.
 
@@ -160,6 +165,8 @@ npm run osm:build    # regenerates public/data/wildwood/*.json
 - **Traffic:** vehicles only turn at OSM way endpoints, so some intersections are driven straight through.
 - **Interiors** aren't modelled. The simulator is exterior-only.
 - Tested with headless Chromium using SwiftShader software rendering, so FPS numbers there don't
-  reflect real GPUs.
+  reflect real GPUs. JavaScript timings from that run: world build ≈ 3 s at load, a chunk takes
+  ≈ 2 ms (base) and ≈ 1 ms (detail) to build, and a typical view is ≈ 360k triangles and ≈ 380
+  draw calls.
 
 Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).

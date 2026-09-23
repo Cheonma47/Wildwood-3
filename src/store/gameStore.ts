@@ -180,7 +180,7 @@ export const telemetry = {
   frameMs: 0,
   drawCalls: 0,
   triangles: 0,
-  chunks: { loaded: 0, detailed: 0, queued: 0, total: 0 },
+  chunks: { loaded: 0, detailed: 0, queued: 0, total: 0 } as { loaded: number; detailed: number; queued: number; total: number; indexMs?: number; avgBaseMs?: number; avgDetailMs?: number },
   surface: 'street' as 'street' | 'boardwalk' | 'sand' | 'grass' | 'water',
   distanceWalked: 0,
   grounded: true,

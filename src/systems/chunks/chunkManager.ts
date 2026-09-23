@@ -34,6 +34,9 @@ export interface ChunkStats {
   detailed: number;
   queued: number;
   total: number;
+  indexMs?: number;
+  avgBaseMs?: number;
+  avgDetailMs?: number;
 }
 
 export class ChunkManager {
@@ -47,6 +50,9 @@ export class ChunkManager {
   drawDistance = 1100;
   detailDistance = 380;
   stats: ChunkStats = { loaded: 0, detailed: 0, queued: 0, total: 0 };
+  private indexMs = 0;
+  private baseTime = { ms: 0, n: 0 };
+  private detailTime = { ms: 0, n: 0 };
   private world: WorldModel;
   /** Coarse (32 m) terrain per chunk: simplified distant geometry shown while the detailed chunk is not loaded. */
   private coarse = new Map<string, THREE.Mesh>();
@@ -58,7 +64,9 @@ export class ChunkManager {
   constructor(world: WorldModel) {
     this.world = world;
     this.root.name = 'chunks';
+    const t0 = performance.now();
     this.index = new ChunkIndex(world);
+    this.indexMs = performance.now() - t0;
     this.mats = getMaterials();
     this.signAtlas = streetSignAtlas(this.index.streetNames);
     this.signMaterial = new THREE.MeshStandardMaterial({ map: this.signAtlas.texture, roughness: 0.6 });
@@ -112,7 +120,10 @@ export class ChunkManager {
       const needDetail = d <= this.detailDistance;
       if (!lc) {
         if (performance.now() - t0 > budgetMs) { queued++; continue; }
+        const tb = performance.now();
         lc = this.buildBase(c);
+        this.baseTime.ms += performance.now() - tb;
+        this.baseTime.n++;
         this.loaded.set(c.key, lc);
         const cm = this.coarse.get(c.key);
         if (cm) cm.visible = false;
@@ -120,7 +131,10 @@ export class ChunkManager {
       lc.lastSeen = performance.now();
       if (needDetail && !lc.detail) {
         if (performance.now() - t0 > budgetMs) { queued++; continue; }
+        const td = performance.now();
         lc.detail = this.buildDetail(c);
+        this.detailTime.ms += performance.now() - td;
+        this.detailTime.n++;
         lc.base.add(lc.detail);
       } else if (!needDetail && lc.detail && d > this.detailDistance + 60) {
         this.disposeGroup(lc.detail);
@@ -141,7 +155,11 @@ export class ChunkManager {
     }
     let detailed = 0;
     for (const lc of this.loaded.values()) if (lc.detail) detailed++;
-    this.stats = { loaded: this.loaded.size, detailed, queued, total: this.index.chunks.size };
+    this.stats = {
+      loaded: this.loaded.size, detailed, queued, total: this.index.chunks.size, indexMs: this.indexMs,
+      avgBaseMs: this.baseTime.n ? this.baseTime.ms / this.baseTime.n : 0,
+      avgDetailMs: this.detailTime.n ? this.detailTime.ms / this.detailTime.n : 0,
+    };
   }
 
   /** Synchronously load everything around a point (initial spawn). */
@@ -241,6 +259,7 @@ export class ChunkManager {
     addI(P.umbrellaTop, M.umbrella, get('umbrella'), true);
     addI(P.beachChair, M.chair, get('chair'), true, false);
     addI(P.lifeguard, M.vc, get('lifeguard'));
+    addI(P.bicycle, M.vc, get('bike'));
 
     if (c.wires.length) {
       const geo = new THREE.BufferGeometry();
