@@ -5,7 +5,7 @@
 import { findLandmarkByBuilding } from '../data/wildwood/landmarks';
 import { boardwalkCenterline, type CenterlineSample } from './boardwalk/centerline';
 import { classifyOsmBuilding } from './buildings/classify';
-import { generateProceduralBuildings } from './buildings/proceduralFill';
+import { buildFootprintBuildings, computeFront, poiGrid } from './buildings/footprints';
 import { loadWorldData, type WorldData } from './data/loadWorld';
 import type { Area, Building, Road } from './data/types';
 import { bboxOf, centroid, pointInRing, type V2 } from './math/polygon';
@@ -104,13 +104,12 @@ export async function buildWorld(onProgress?: (msg: string) => void): Promise<Wo
   const mainBoardwalk = boardwalks.reduce<Area | null>((best, b) => (!best || b.outer.length > best.outer.length ? b : best), null);
   const boardwalkLine = mainBoardwalk ? boardwalkCenterline(mainBoardwalk.outer) : [];
 
-  onProgress?.('Generating procedural buildings on real street frontage…');
+  onProgress?.('Placing real building footprints (Microsoft Building Footprints)…');
   await tick();
-  const procedural = generateProceduralBuildings({
-    roads: data.roads, roadIndex, areas: data.areas, existing: buildings, terrain, distToBoardwalk, boardwalkLine,
-    obstacles: surfaces.list.filter((s) => s.kind !== 'deck').map((s) => s.outer),
-  });
+  const pgrid = poiGrid(data.pois);
+  const procedural = buildFootprintBuildings(data.footprints, pgrid, roadIndex, distToBoardwalk, isOnDeck, DECK_HEIGHT);
   buildings.push(...procedural);
+  for (const b of buildings) b.front = computeFront(b, roadIndex);
 
   onProgress?.('Building collision and navigation graph…');
   await tick();

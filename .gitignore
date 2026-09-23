@@ -3,3 +3,5 @@ dist
 data/osm-raw
 *.local
 .DS_Store
+data/msbuildings
+data/overture

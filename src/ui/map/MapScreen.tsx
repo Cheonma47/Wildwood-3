@@ -238,8 +238,8 @@ export function MapScreen({ world }: { world: WorldModel }) {
         <div className="card legend">
           <div><span className="dot" style={{ background: '#ff3d71' }} /> Workplace</div>
           <div><span className="dot" style={{ background: '#b3a38f' }} /> Real OSM buildings</div>
-          <div><span className="dot" style={{ background: '#cdbfae' }} /> Procedural buildings (approximate)</div>
-          <div className="muted small">Map data © OpenStreetMap contributors</div>
+          <div><span className="dot" style={{ background: '#cdbfae' }} /> Microsoft building footprints</div>
+          <div className="muted small">Map data © OpenStreetMap contributors · Microsoft Building Footprints (ODbL) · Overture Maps</div>
         </div>
       </div>
     </div>

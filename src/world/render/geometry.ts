@@ -134,7 +134,7 @@ export class GeoBuilder {
   }
 
   /** Axis-aligned box (optionally rotated about Y by angle) centred at (x, y0..y1, z). */
-  box(x: number, z: number, y0: number, y1: number, sx: number, sz: number, angle = 0, c?: THREE.Color): void {
+  box(x: number, z: number, y0: number, y1: number, sx: number, sz: number, angle = 0, c?: THREE.Color, uvConst?: [number, number], e = 0): void {
     const ca = Math.cos(angle), sa = Math.sin(angle);
     const P = (lx: number, lz: number): [number, number] => [x + lx * ca - lz * sa, z + lx * sa + lz * ca];
     const hx = sx / 2, hz = sz / 2;
@@ -142,12 +142,12 @@ export class GeoBuilder {
     // sides
     for (let i = 0; i < 4; i++) {
       const a = corners[i], b = corners[(i + 1) % 4];
-      this.quad([[a[0], y0, a[1]], [a[0], y1, a[1]], [b[0], y1, b[1]], [b[0], y0, b[1]]], [[0, 0], [0, 1], [1, 1], [1, 0]], c);
+      this.quad([[a[0], y0, a[1]], [a[0], y1, a[1]], [b[0], y1, b[1]], [b[0], y0, b[1]]], uvConst ? [uvConst, uvConst, uvConst, uvConst] : [[0, 0], [0, 1], [1, 1], [1, 0]], c, e);
     }
     // top
     this.quad(
       [[corners[0][0], y1, corners[0][1]], [corners[3][0], y1, corners[3][1]], [corners[2][0], y1, corners[2][1]], [corners[1][0], y1, corners[1][1]]],
-      [[0, 0], [0, 1], [1, 1], [1, 0]], c,
+      uvConst ? [uvConst, uvConst, uvConst, uvConst] : [[0, 0], [0, 1], [1, 1], [1, 0]], c, e,
     );
   }
 

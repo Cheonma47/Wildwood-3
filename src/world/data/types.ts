@@ -70,6 +70,8 @@ export interface RawPoi {
   detail?: string;
   brand?: string;
   addr?: string;
+  /** 'overture' for Overture Maps places; OSM otherwise. */
+  src?: string;
 }
 
 export interface RawPoint {
@@ -99,7 +101,7 @@ export interface Road {
 
 export interface Building {
   id: number;
-  source: 'osm' | 'procedural';
+  source: 'osm' | 'procedural' | 'footprint';
   type: string;
   name?: string;
   outer: V2[];
@@ -114,6 +116,8 @@ export interface Building {
   landmarkId?: string;
   /** Orientation for procedural rectangular lots: direction of the street frontage. */
   frontDir?: V2;
+  /** Street-facing facade: midpoint, outward normal, direction along it, length. */
+  front?: { mid: V2; n: V2; d: V2; len: number };
   seed: number;
 }
 

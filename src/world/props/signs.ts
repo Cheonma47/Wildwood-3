@@ -1,11 +1,10 @@
 /**
- * Building signage.
- * - Real business names from OSM POIs are put on the building that contains
- *   them (or the nearest one), on the facade facing the street.
- * - Motels get a Doo-Wop style pole sign with neon lettering (real name if
- *   OSM has one, otherwise a generic "MOTEL").
- * - Boardwalk shops without OSM data get generic category signs
- *   (PIZZA, ARCADE…) — generic labels, not invented business names.
+ * Building signage — real names only.
+ * Businesses from OpenStreetMap and Overture Maps are put on the building
+ * whose footprint contains them (or the nearest one), on the facade facing
+ * the street / Boardwalk. Several businesses in one building are spread along
+ * its facade. Motels get a Doo-Wop style pole sign. Buildings with no known
+ * business get no sign (nothing is invented).
  */
 import * as THREE from 'three';
 import type { Building, Poi } from '../data/types';
@@ -28,11 +27,10 @@ export interface Sign {
   fg: string;
 }
 
-const BOARDWALK_GENERIC = ['PIZZA', 'ARCADE', 'GIFTS', 'T-SHIRTS', 'FRIES', 'ICE CREAM', 'SALT WATER TAFFY', 'BURGERS', 'GAMES', 'SUBS', 'FUDGE', 'SOUVENIRS', 'LEMONADE', 'FUNNEL CAKE', 'HOT DOGS', 'SURF SHOP'];
 const NEON = ['#ff4fa3', '#4fe3ff', '#ffe14f', '#7dff6a', '#ff7a3d', '#c77dff'];
 const BOARD_BG = ['#b3261e', '#1b4f72', '#1e7d4b', '#6a1b9a', '#e0a100', '#263238', '#00838f'];
 
-const SIGN_POI = new Set(['restaurant', 'cheap_food', 'shop', 'supermarket', 'convenience', 'pharmacy', 'laundromat', 'bank', 'lodging', 'attraction', 'venue']);
+const SIGN_POI = new Set(['restaurant', 'cheap_food', 'shop', 'supermarket', 'convenience', 'pharmacy', 'laundromat', 'bank', 'lodging', 'attraction', 'venue', 'worship', 'civic', 'emergency']);
 
 export function computeSigns(world: WorldModel): Sign[] {
   const signs: Sign[] = [];
@@ -42,7 +40,7 @@ export function computeSigns(world: WorldModel): Sign[] {
     for (const p of b.outer) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]); }
     grid.insert(b, { minX, minZ, maxX, maxZ });
   }
-  const named = new Map<Building, Poi>();
+  const named = new Map<Building, Poi[]>();
   for (const p of world.data.pois) {
     if (!p.name || !SIGN_POI.has(p.cat)) continue;
     let host: Building | null = null;
@@ -54,7 +52,10 @@ export function computeSigns(world: WorldModel): Sign[] {
       const d = Math.hypot(c[0] - p.x, c[1] - p.z);
       if (d < best) { best = d; host = b; }
     }
-    if (host && !named.has(host)) named.set(host, p);
+    if (!host) continue;
+    const list = named.get(host) ?? [];
+    if (list.length < 6 && !list.some((q) => q.name.toLowerCase() === p.name.toLowerCase())) list.push(p);
+    named.set(host, list);
   }
 
   const streetFacade = (b: Building) => {
@@ -68,32 +69,36 @@ export function computeSigns(world: WorldModel): Sign[] {
     return facadeFacing(b.outer, target);
   };
 
+  // Only real names (OSM / Overture Maps). Buildings without a known business get no sign.
   for (const b of world.buildings) {
     if (b.landmarkId) continue;
-    const poi = named.get(b);
-    const r = hash01(b.seed + 91);
-    const isMotel = b.style === 'motel' || poi?.cat === 'lodging';
-    const isShop = b.style === 'shop' || b.style === 'restaurant' || b.style === 'boardwalk_shop' || b.style === 'commercial';
-    if (!poi && !isMotel && !(b.style === 'boardwalk_shop') && !(isShop && r < 0.35)) continue;
+    const list = named.get(b);
+    if (!list?.length) continue;
     const f = streetFacade(b);
-    if (!f || f.len < 4) continue;
-    const text = poi?.name?.toUpperCase()
-      ?? (isMotel ? 'MOTEL' : b.style === 'boardwalk_shop' ? BOARDWALK_GENERIC[Math.floor(r * BOARDWALK_GENERIC.length)] : b.style === 'restaurant' ? (r < 0.5 ? 'GRILL' : 'DINER') : r < 0.12 ? 'LIQUORS' : r < 0.24 ? 'DELI' : 'SHOP');
-    if (isMotel) {
-      // pole sign at the street side of the lot
-      const px = f.mid[0] + f.n[0] * 4 + f.d[0] * (f.len / 2 - 1.5);
-      const pz = f.mid[1] + f.n[1] * 4 + f.d[1] * (f.len / 2 - 1.5);
-      const col = NEON[Math.floor(r * NEON.length)];
-      signs.push({ x: px, y: world.groundAt(px, pz) + 6.2, z: pz, yaw: Math.atan2(f.d[0], f.d[1]), w: 3.6, h: 1.6, text, kind: 'pole', bg: '#101820', fg: col });
-      // name along the upper facade too
-      const y = b.baseY + Math.min(b.height - 0.6, 5.5);
-      signs.push({ x: f.mid[0] + f.n[0] * 0.12, y, z: f.mid[1] + f.n[1] * 0.12, yaw: f.yaw, w: Math.min(f.len * 0.6, 12), h: 1.1, text, kind: 'neon', bg: '#ffffff00', fg: col });
-    } else {
-      const w = Math.min(f.len * 0.8, Math.max(3, text.length * 0.55));
-      const y = b.baseY + Math.min(b.height - 0.7, b.style === 'boardwalk_shop' ? 3.4 : 3.9);
-      const bg = BOARD_BG[Math.floor(r * BOARD_BG.length)];
-      signs.push({ x: f.mid[0] + f.n[0] * 0.14, y, z: f.mid[1] + f.n[1] * 0.14, yaw: f.yaw, w, h: 0.95, text, kind: b.style === 'boardwalk_shop' ? 'neon' : 'board', bg, fg: '#ffffff' });
-    }
+    if (!f || f.len < 3) continue;
+    const r = hash01(b.seed + 91);
+    // several businesses in one building (strip malls, Boardwalk rows): spread them along the facade
+    const slot = f.len / list.length;
+    list.forEach((poi, k) => {
+      const text = poi.name.toUpperCase();
+      const u = -f.len / 2 + slot * (k + 0.5);
+      const cx = f.mid[0] + f.d[0] * u, cz = f.mid[1] + f.d[1] * u;
+      const rk = hash01(b.seed + 91 + k * 17);
+      if (poi.cat === 'lodging' && list.length === 1) {
+        const px = f.mid[0] + f.n[0] * 4 + f.d[0] * (f.len / 2 - 1.5);
+        const pz = f.mid[1] + f.n[1] * 4 + f.d[1] * (f.len / 2 - 1.5);
+        const col = NEON[Math.floor(r * NEON.length)];
+        signs.push({ x: px, y: world.groundAt(px, pz) + 6.2, z: pz, yaw: Math.atan2(f.d[0], f.d[1]), w: 3.6, h: 1.6, text, kind: 'pole', bg: '#101820', fg: col });
+        const y = b.baseY + Math.min(b.height - 0.6, 5.5);
+        signs.push({ x: cx + f.n[0] * 0.12, y, z: cz + f.n[1] * 0.12, yaw: f.yaw, w: Math.min(f.len * 0.6, 12), h: 1.1, text, kind: 'neon', bg: '#ffffff00', fg: col });
+      } else {
+        const w = Math.min(slot * 0.85, Math.max(2.5, text.length * 0.5));
+        const y = b.baseY + Math.min(b.height - 0.7, 3.9);
+        const bg = BOARD_BG[Math.floor(rk * BOARD_BG.length)];
+        const neon = b.style === 'boardwalk_shop' || poi.cat === 'lodging';
+        signs.push({ x: cx + f.n[0] * 0.14, y, z: cz + f.n[1] * 0.14, yaw: f.yaw, w, h: Math.min(0.95, w * 0.3), text, kind: neon ? 'neon' : 'board', bg, fg: neon ? NEON[Math.floor(rk * NEON.length)] : '#ffffff' });
+      }
+    });
   }
   return signs;
 }
@@ -102,9 +107,9 @@ export function computeSigns(world: WorldModel): Sign[] {
 export class SignAtlas {
   readonly texture: THREE.CanvasTexture;
   private slots = new Map<string, [number, number, number, number]>();
-  private static COLS = 8;
+  private static COLS = 12;
   private static SW = 256;
-  private static SH = 64;
+  private static SH = 48;
 
   constructor(signs: Sign[]) {
     const keys = [...new Set(signs.map((s) => SignAtlas.key(s)))];
@@ -131,7 +136,7 @@ export class SignAtlas {
         ctx.lineWidth = 3;
         ctx.strokeRect(x + 3, y + 3, SignAtlas.SW - 6, SignAtlas.SH - 6);
       }
-      let size = 40;
+      let size = 30;
       const font = neon ? '"Brush Script MT", "Segoe Script", cursive' : 'Arial Black, Arial, sans-serif';
       ctx.font = `bold ${size}px ${font}`;
       while (ctx.measureText(s.text).width > SignAtlas.SW - 16 && size > 11) {

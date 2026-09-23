@@ -12,6 +12,8 @@ import type {
 export interface WorldData {
   roads: Road[];
   rawBuildings: RawBuilding[];
+  /** Microsoft building footprints (not in OSM). */
+  footprints: { outer: V2[]; h?: number }[];
   osmBuildingRings: Map<number, { outer: V2[]; holes?: V2[][] }[]>;
   areas: Area[];
   lines: Line[];
@@ -48,6 +50,11 @@ export async function loadWorldData(onProgress?: (msg: string) => void): Promise
     getJson<RawPoint[]>('points'),
     getJson<WorldData['meta']>('meta'),
   ]);
+  const [rawFootprints, rawPlaces] = await Promise.all([
+    getJson<{ h?: number; pts: number[] }[]>('msbuildings').catch(() => []),
+    getJson<RawPoi[]>('places').catch(() => [] as RawPoi[]),
+  ]);
+  rawPois.push(...rawPlaces);
   onProgress?.('Projecting coordinates to local metres…');
 
   const roads: Road[] = rawRoads.map((r) => ({
@@ -89,5 +96,6 @@ export async function loadWorldData(onProgress?: (msg: string) => void): Promise
     return { kind: p.kind, name: p.name, x: w.x, z: w.z };
   });
 
-  return { roads, rawBuildings, osmBuildingRings, areas, lines, water, pois, points, meta };
+  const footprints = rawFootprints.map((f) => ({ outer: openRing(projectFlat(f.pts)), h: f.h }));
+  return { roads, rawBuildings, footprints, osmBuildingRings, areas, lines, water, pois, points, meta };
 }

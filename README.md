@@ -71,9 +71,16 @@ a table of fixed landmark pairs.
   the ocean and the famously wide beach keeps its real width.
 - **Roads:** real carriageway widths, sidewalks, double-yellow centre lines, parking-lane lines,
   crosswalks at OSM crossings and signals, and street-name signs at real intersections.
-- **Buildings:** real OSM footprints, plus **procedural fill** on the real block frontage (houses,
-  motels, apartments, shops, and a continuous shop row along the Boardwalk). Fill buildings never
-  overlap real buildings, roads, sidewalks, beach, parks or parking. They're marked as approximate on the map.
+- **Buildings — every one is real:** 773 OSM footprints plus 8,643 footprints from
+  [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints)
+  (ODbL), about 6,000 of them with a measured height. What each building is used for comes from the
+  businesses inside it, the street it faces, its size and its distance to the Boardwalk. Houses get
+  gable roofs, front doors, porches and steps facing the street. Shops get storefront glass, a door
+  and an awning.
+- **Businesses:** 432 OSM POIs plus 934 places from [Overture Maps](https://overturemaps.org)
+  (closed and low-confidence places removed, OSM duplicates skipped). Each one puts its real name on
+  the building that contains it, and several businesses in one building are spread along its front.
+  Buildings with no known business get no sign; nothing is invented.
 - **Boardwalk:** the real OSM Boardwalk polygon as an elevated deck, 1 m up on pilings, with plank
   texture, tram-lane lines, lamps, benches, trash cans, ramps where every street meets it, beach
   stairs, and the **Sightseer Tram Car** running end to end.
@@ -102,9 +109,6 @@ a table of fixed landmark pairs.
   gulls, crowd murmur, arcade blips, birds and distant traffic cross-fade by zone.
 - **No moving cars or people** (removed for performance). Static parked cars, beach umbrellas
   and street furniture remain near the player.
-- **Signage:** real OSM business names go on their buildings. Motels get Doo-Wop pole signs with
-  neon at night. Boardwalk shops without OSM data get generic category signs (PIZZA, ARCADE, …)
-  instead of invented names.
 - **Debug (F3):** latitude and longitude, world X and Z, speed, distance from Dogtooth, current
   street, surface, FPS, loaded chunks, draw calls, triangles and building counts.
 
@@ -121,7 +125,7 @@ src/
     math/                polygons, spatial grid, segment index
     terrain/             raster heightfield + chunk meshes
     roads/               widths/classes, ribbons, sidewalks, markings
-    buildings/           OSM classifier, procedural fill, merged chunk meshes
+    buildings/           OSM classifier, Microsoft footprints, merged chunk meshes
     boardwalk/           deck, centreline, ramps, tram lane
     ocean/               water shader
     landmarks/           Dogtooth, McDonald's, Convention Center, Morey's Piers…
@@ -146,13 +150,19 @@ src/
 ```
 npm run osm:fetch    # downloads 20 OSM API tiles for the bounds in scripts/bounds.mjs
 npm run osm:build    # regenerates public/data/wildwood/*.json
+# Microsoft footprints: download quadkey 032010123 (UnitedStates) from
+#   https://minedbuildings.z5.web.core.windows.net/global-buildings/dataset-links.csv
+#   to data/msbuildings/q.csv.gz, then:
+node scripts/build-msbuildings.mjs
+# Overture places (pip install duckdb):
+python3 scripts/fetch-overture.py && node scripts/build-overture.mjs
 ```
 
 ## Known limitations
 
-- **Building coverage:** OSM has footprints for only about 770 buildings here. The other ~8,000
-  are procedural. They sit on real blocks and real frontage, but their shapes, heights and uses are
-  approximate. Real footprints are drawn darker on the map.
+- **Building appearance:** shapes, positions and most heights are real, but colours, window
+  patterns and uses are inferred. There's no photo imagery, since Google Street View photos can't be
+  used. Roof shapes are simplified to gables on houses and flat roofs elsewhere.
 - **Landmark appearance:** positions and footprints are real. Colours, signage and ride layouts are
   stylised approximations. The Dogtooth exterior in particular should be refined from photos. The
   WILDWOODS sign position is approximate because it isn't in OSM.

@@ -112,7 +112,7 @@ function Minimap({ world, x, z, heading }: { world: WorldModel; x: number; z: nu
     const l = last.current;
     const now = performance.now();
     const same = Math.hypot(x - l.x, z - l.z) < 2 && Math.abs(heading - l.h) < 4 && l.route === route && l.dest === destination;
-    if (same || now - l.t < 250) return;
+    if (same) return;
     last.current = { x, z, h: heading, t: now, route, dest: destination };
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = c.clientWidth, h = c.clientHeight;
