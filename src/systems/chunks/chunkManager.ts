@@ -18,6 +18,8 @@ import { buildTerrainChunk } from '../../world/terrain/terrainGeometry';
 import { getPrototypes } from '../../world/props/prototypes';
 import { CHUNK_SIZE, type WorldModel } from '../../world/worldModel';
 import { ChunkIndex, type ChunkData, type PropInstance, type PropKind } from './chunkIndex';
+import { SignAtlas } from '../../world/props/signs';
+import { registerNightMaterial } from '../../world/render/materials';
 
 interface LoadedChunk {
   data: ChunkData;
@@ -49,6 +51,9 @@ export class ChunkManager {
   /** Coarse (32 m) terrain per chunk: simplified distant geometry shown while the detailed chunk is not loaded. */
   private coarse = new Map<string, THREE.Mesh>();
   private crosswalkMat: THREE.MeshStandardMaterial;
+  private boardAtlas: SignAtlas;
+  private neonMat: THREE.MeshStandardMaterial;
+  private boardMat: THREE.MeshStandardMaterial;
 
   constructor(world: WorldModel) {
     this.world = world;
@@ -67,6 +72,12 @@ export class ChunkManager {
       signal: new THREE.MeshStandardMaterial({ vertexColors: true, emissive: '#ffffff', emissiveIntensity: 0.6 }),
       wire: new THREE.LineBasicMaterial({ color: '#1d1d1d', transparent: true, opacity: 0.8 }),
     };
+    this.boardAtlas = new SignAtlas(this.index.allBoards);
+    const t = this.boardAtlas.texture;
+    this.neonMat = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0.3, transparent: true, alphaTest: 0.05, side: THREE.FrontSide, roughness: 0.5 });
+    this.boardMat = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0.05, roughness: 0.6 });
+    registerNightMaterial(this.neonMat, 2.2);
+    registerNightMaterial(this.boardMat, 0.7);
     this.crosswalkMat = this.mats.marking.clone();
     this.crosswalkMat.side = THREE.DoubleSide;
     this.stats.total = this.index.chunks.size;
@@ -221,6 +232,7 @@ export class ChunkManager {
     addI(P.signalPole, M.vc, get('signal'));
     addI(P.signalLights, M.signal, get('signal'), false, false);
     addI(P.stopSign, M.vc, get('stop'));
+    addI(P.signPole, M.vc, get('signPost'));
     addI(P.carBody, M.car, get('car'), true);
     addI(P.carGlass, M.glass, get('car'), false, false);
     addI(P.bench, M.vc, get('bench'));
@@ -256,6 +268,27 @@ export class ChunkManager {
       }
       const geo = gb.build();
       if (geo) g.add(new THREE.Mesh(geo, this.signMaterial));
+    }
+
+    // Business / motel signs from the atlas
+    if (c.boards.length) {
+      const neon = new GeoBuilder(), board = new GeoBuilder();
+      for (const s of c.boards) {
+        const uv = this.boardAtlas.uv(s);
+        if (!uv) continue;
+        const [u0, v0, u1, v1] = uv;
+        const Xx = Math.cos(s.yaw), Xz = -Math.sin(s.yaw);
+        const hw = s.w / 2, y0 = s.y - s.h / 2, y1 = s.y + s.h / 2;
+        const L = [s.x - Xx * hw, s.z - Xz * hw], R = [s.x + Xx * hw, s.z + Xz * hw];
+        const gb = s.kind === 'board' ? board : neon;
+        gb.quad([[R[0], y0, R[1]], [R[0], y1, R[1]], [L[0], y1, L[1]], [L[0], y0, L[1]]], [[u1, v0], [u1, v1], [u0, v1], [u0, v0]]);
+        if (s.kind === 'pole') {
+          gb.quad([[L[0], y0, L[1]], [L[0], y1, L[1]], [R[0], y1, R[1]], [R[0], y0, R[1]]], [[u1, v0], [u1, v1], [u0, v1], [u0, v0]]);
+        }
+      }
+      const ng = neon.build(), bg = board.build();
+      if (ng) g.add(new THREE.Mesh(ng, this.neonMat));
+      if (bg) g.add(new THREE.Mesh(bg, this.boardMat));
     }
 
     // Crosswalk stripes (continental style)

@@ -11,6 +11,7 @@ import { shortStreetName, SIDEWALK_WIDTH } from '../../world/roads/roadStyle';
 import { TerrainClass } from '../../world/terrain/heightfield';
 import { DECK_HEIGHT } from '../../world/physics/walkable';
 import { CHUNK_SIZE, chunkKey, type WorldModel } from '../../world/worldModel';
+import { computeSigns, type Sign } from '../../world/props/signs';
 
 export interface PropInstance {
   x: number;
@@ -53,6 +54,7 @@ export interface ChunkData {
   wires: number[]; // flat xyz pairs for LineSegments
   signs: StreetSign[];
   crosswalks: Crosswalk[];
+  boards: Sign[];
 }
 
 const CAR_COLORS = [0xf2f2f2, 0x1c1c1c, 0x9aa0a6, 0x2b4d7e, 0x8c1c1c, 0xd9d9d9, 0x4a4f55, 0x1e5b3a, 0xc9a86a, 0x5a2e6e];
@@ -60,6 +62,7 @@ const CAR_COLORS = [0xf2f2f2, 0x1c1c1c, 0x9aa0a6, 0x2b4d7e, 0x8c1c1c, 0xd9d9d9, 
 export class ChunkIndex {
   readonly chunks = new Map<string, ChunkData>();
   readonly streetNames: string[];
+  readonly allBoards: Sign[];
 
   constructor(world: WorldModel) {
     const get = (key: string): ChunkData => {
@@ -68,7 +71,7 @@ export class ChunkIndex {
         const [ix, iz] = key.split(',').map(Number);
         c = {
           key, ix, iz, minX: ix * CHUNK_SIZE, minZ: iz * CHUNK_SIZE,
-          buildings: [], roadRuns: [], areas: [], props: new Map(), wires: [], signs: [], crosswalks: [],
+          buildings: [], roadRuns: [], areas: [], props: new Map(), wires: [], signs: [], crosswalks: [], boards: [],
         };
         this.chunks.set(key, c);
       }
@@ -106,6 +109,18 @@ export class ChunkIndex {
     const inBuilding = (x: number, z: number, r = 0.6) =>
       bgrid.query(x - r, z - r, x + r, z + r).some((b) => pointInRing(x, z, b.outer));
     const ground = (x: number, z: number) => world.groundAt(x, z);
+    /** True if (x,z) lies on any drivable carriageway (+margin). Keeps props off the streets. */
+    const onRoad = (x: number, z: number, margin = 0.4) => {
+      for (const sgm of world.roadIndex.query(x, z, 12)) {
+        if (!sgm.ref.drivable) continue;
+        const dx = sgm.bx - sgm.ax, dz = sgm.bz - sgm.az;
+        const l2 = dx * dx + dz * dz || 1;
+        const t = Math.max(0, Math.min(1, ((x - sgm.ax) * dx + (z - sgm.az) * dz) / l2));
+        const d = Math.hypot(x - (sgm.ax + dx * t), z - (sgm.az + dz * t));
+        if (d < sgm.ref.width / 2 + margin) return true;
+      }
+      return false;
+    };
 
     // ---- intersections (node degree) for signs / parked-car gaps
     const nodeRoads = new Map<number, { road: Road; i: number }[]>();
@@ -140,7 +155,8 @@ export class ChunkIndex {
         const n1: V2 = [-d1[1], d1[0]], n2: V2 = [-d2[1], d2[0]];
         const off1 = w2 / 2 + SIDEWALK_WIDTH * 0.6, off2 = w1 / 2 + SIDEWALK_WIDTH * 0.6;
         let sx = p[0] + d1[0] * off1 + d2[0] * off2, sz = p[1] + d1[1] * off1 + d2[1] * off2;
-        if (inBuilding(sx, sz)) { sx = p[0] - n1[0] * off2 - n2[0] * off1; sz = p[1] - n1[1] * off2 - n2[1] * off1; }
+        if (inBuilding(sx, sz) || onRoad(sx, sz, 0.2)) { sx = p[0] - n1[0] * off2 - n2[0] * off1; sz = p[1] - n1[1] * off2 - n2[1] * off1; }
+        if (onRoad(sx, sz, 0.1)) continue;
         const ang = (d: V2) => Math.atan2(-d[1], d[0]);
         const y = ground(sx, sz);
         get(chunkKey(sx, sz)).signs.push({
@@ -178,7 +194,7 @@ export class ChunkIndex {
           lampAcc += 1; poleAcc += 1; carAcc += 1;
           if (lampAcc >= 36) {
             const px = x + nx * lampSide * (w / 2 + 0.5), pz = z + nz * lampSide * (w / 2 + 0.5);
-            if (!inBuilding(px, pz) && world.terrain.classAt(px, pz) !== TerrainClass.Water && !world.isOnDeck(px, pz)) {
+            if (!inBuilding(px, pz) && !onRoad(px, pz, 0.2) && world.terrain.classAt(px, pz) !== TerrainClass.Water && !world.isOnDeck(px, pz)) {
               addProp('lamp', { x: px, y: ground(px, pz), z: pz, rot: Math.atan2(nz * lampSide, -nx * lampSide) });
               lampAcc = 0;
               lampSide = -lampSide;
@@ -187,7 +203,7 @@ export class ChunkIndex {
           if (poleAcc >= 40 && road.hasSidewalk) {
             const off = w / 2 + SIDEWALK_WIDTH + 0.35;
             const px = x + nx * poleSide * off, pz = z + nz * poleSide * off;
-            if (!inBuilding(px, pz, 0.8) && world.terrain.classAt(px, pz) === TerrainClass.Land && !nearJunction(px, pz, 6) && !world.isOnDeck(px, pz)) {
+            if (!inBuilding(px, pz, 0.8) && !onRoad(px, pz, 0.6) && world.terrain.classAt(px, pz) === TerrainClass.Land && !nearJunction(px, pz, 6) && !world.isOnDeck(px, pz)) {
               const y = ground(px, pz);
               addProp('pole', { x: px, y, z: pz, rot: Math.atan2(-uz, ux) + Math.PI / 2 });
               if (lastPole && Math.hypot(lastPole[0] - px, lastPole[2] - pz) < 60) {
@@ -219,9 +235,10 @@ export class ChunkIndex {
     // ---- OSM point features
     for (const p of world.data.points) {
       const y = ground(p.x, p.z);
+      if ((p.kind === 'tree' || p.kind === 'pole') && onRoad(p.x, p.z, 0.3)) continue;
       if (p.kind === 'tree') addProp('tree', { x: p.x, y, z: p.z, rot: hash01(Math.floor(p.x * 13)) * 6.28, scale: 0.8 + hash01(Math.floor(p.z * 7)) * 0.5 });
       else if (p.kind === 'pole' && !inBuilding(p.x, p.z)) addProp('pole', { x: p.x, y, z: p.z, rot: 0 });
-      else if (p.kind === 'signal' || p.kind === 'stop' || p.kind === 'crossing') this.placeRoadside(world, p, addProp, get);
+      else if (p.kind === 'signal' || p.kind === 'stop' || p.kind === 'crossing') this.placeRoadside(world, p, (k, pr) => { if (!onRoad(pr.x, pr.z, 0.2)) addProp(k, pr); }, get);
     }
 
     // ---- trees scattered in parks
@@ -233,9 +250,16 @@ export class ChunkIndex {
       const n = Math.min(60, Math.floor(((maxX - minX) * (maxZ - minZ)) / 400));
       for (let i = 0; i < n; i++) {
         const x = minX + r() * (maxX - minX), z = minZ + r() * (maxZ - minZ);
-        if (!pointInRing(x, z, a.outer) || inBuilding(x, z, 2)) continue;
+        if (!pointInRing(x, z, a.outer) || inBuilding(x, z, 2) || onRoad(x, z, 1.5)) continue;
         addProp('tree', { x, y: ground(x, z), z, rot: r() * 6.28, scale: 0.7 + r() * 0.6 });
       }
+    }
+
+    // ---- business / motel signage
+    this.allBoards = computeSigns(world);
+    for (const b of this.allBoards) {
+      get(chunkKey(b.x, b.z)).boards.push(b);
+      if (b.kind === 'pole') addProp('signPost', { x: b.x, y: b.y - 6.2, z: b.z, rot: b.yaw });
     }
 
     // ---- boardwalk furniture and beach items

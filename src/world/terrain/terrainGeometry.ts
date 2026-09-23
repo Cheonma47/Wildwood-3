@@ -15,7 +15,9 @@ const WET_SAND = new THREE.Color('#bda878');
 
 export function buildTerrainChunk(terrain: Terrain, x0: number, z0: number, size: number, step: number): THREE.BufferGeometry | null {
   const g = new GeoBuilder({ color: true });
-  const n = Math.round(size / step);
+  // exact subdivision so neighbouring chunks share their edge vertices (no seams)
+  const n = Math.max(1, Math.ceil(size / step));
+  step = size / n;
   const c = new THREE.Color();
   for (let j = 0; j <= n; j++) {
     for (let i = 0; i <= n; i++) {

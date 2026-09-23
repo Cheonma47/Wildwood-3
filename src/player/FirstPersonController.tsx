@@ -17,6 +17,8 @@ const keys = new Set<string>();
 let fastToggle = false;
 
 export const playerRef: { current: PlayerPhysics | null } = { current: null };
+/** Developer free camera (aerial screenshots); null = normal first-person view. */
+const debugCam: { current: { x: number; y: number; z: number; yaw: number; pitch: number } | null } = { current: null };
 
 export function requestLock(): void {
   const c = document.querySelector('canvas');
@@ -46,11 +48,19 @@ export function FirstPersonController({ world }: { world: WorldModel }) {
         yaw.current = (-headingDeg * Math.PI) / 180;
         pitch.current = (pitchDeg * Math.PI) / 180;
       },
+      teleportWorld: (x: number, z: number, headingDeg = 0, pitchDeg = 0) => {
+        player.teleport(x, z);
+        yaw.current = (-headingDeg * Math.PI) / 180;
+        pitch.current = (pitchDeg * Math.PI) / 180;
+      },
       look: (headingDeg: number, pitchDeg = 0) => {
         yaw.current = (-headingDeg * Math.PI) / 180;
         pitch.current = (pitchDeg * Math.PI) / 180;
       },
       state: () => ({ x: player.x, y: player.y, z: player.z }),
+      freeCam: (c: { x: number; y: number; z: number; headingDeg: number; pitchDeg: number } | null) => {
+        debugCam.current = c ? { x: c.x, y: c.y, z: c.z, yaw: (-c.headingDeg * Math.PI) / 180, pitch: (c.pitchDeg * Math.PI) / 180 } : null;
+      },
       step: (seconds: number, forward = 1, run = false) => {
         for (let t = 0; t < seconds; t += 1 / 60) player.step(1 / 60, yaw.current, { forward, right: 0, run, fast: false, jump: false });
       },
@@ -168,6 +178,11 @@ export function FirstPersonController({ world }: { world: WorldModel }) {
     camera.position.set(player.x + Math.cos(yaw.current) * sway, player.visualY + EYE_HEIGHT + bob, player.z - Math.sin(yaw.current) * sway);
     camera.rotation.order = 'YXZ';
     camera.rotation.set(pitch.current, yaw.current, 0);
+    if (debugCam.current) {
+      const d = debugCam.current;
+      camera.position.set(d.x, d.y, d.z);
+      camera.rotation.set(d.pitch, d.yaw, 0);
+    }
 
     // footsteps
     const stride = input.run ? 1.35 : 0.75;

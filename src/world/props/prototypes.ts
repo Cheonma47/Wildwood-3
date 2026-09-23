@@ -74,6 +74,11 @@ function make() {
   ]);
 
   const signPost = merge([colored(at(new THREE.CylinderGeometry(0.04, 0.04, 3.2, 5), 0, 1.6, 0), '#9aa1a8')]);
+  const signPole = merge([
+    colored(at(new THREE.CylinderGeometry(0.12, 0.15, 5.4, 8), 0, 2.7, 0), '#c9ccd1'),
+    colored(at(new THREE.BoxGeometry(3.9, 0.18, 0.35), 0, 5.3, 0), '#c9ccd1'),
+    colored(at(new THREE.BoxGeometry(3.9, 0.18, 0.35), 0, 7.1, 0), '#c9ccd1'),
+  ]);
 
   // Car ~4.6 × 1.8 × 1.45 m, local +x forward
   const carBody = merge([
@@ -120,7 +125,7 @@ function make() {
 
   return {
     lampPole, lampHead, bwLampPole, bwLampGlobe, treeTrunk, treeCanopy, utilityPole, signalPole, signalLights,
-    stopSign, signPost, carBody, carGlass, bench, trashCan, umbrellaPole, umbrellaTop, beachChair, lifeguard, person, piling,
+    stopSign, signPost, signPole, carBody, carGlass, bench, trashCan, umbrellaPole, umbrellaTop, beachChair, lifeguard, person, piling,
   };
 }
 
